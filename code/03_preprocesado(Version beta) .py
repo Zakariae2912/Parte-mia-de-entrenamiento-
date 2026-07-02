@@ -202,38 +202,22 @@ for variable in variables_numericas:
     print(f"{variable:20s}: {porcentaje:6.2f}%")
 
 
-# CAMBIO: LA ESTADISTICA DESC
-# 04_analisis_exploratorio.py, porque no transforma los datos.
-
 # ==========================================================
-# COMPROBACIÓN ÚNICA DE RANGOS FISIOLÓGICAMENTE PLAUSIBLES
+# DEPURACIÓN CONSERVADORA DE CONSTANTES VITALES
 # ==========================================================
 
-# CAMBIO: se elimina la validación repetida porque el número de
-# pacientes, registros y el esquema ya se comprobaron anteriormente.
-
-print("\n" + "=" * 70)
-print("COMPROBACIÓN DE RANGOS FISIOLÓGICAMENTE PLAUSIBLES")
-print("=" * 70)
-
-# CAMBIO: se establece un único conjunto de rangos para evitar
-# utilizar límites diferentes en varias partes del preprocesado.
-rangos_clinicos = {
+# Se conservan las columnas originales para trazabilidad.
+rangos_limpieza = {
     "HR": (20, 250),
-    "O2Sat": (0, 100),
-    "Temp": (25, 45),
-    "SBP": (40, 260),
-    "MAP": (30, 200),
-    "Resp": (4, 70),
-    "FiO2": (0.20, 1.00),
-    "Lactate": (0.1, 30)
+    "Temp": (33, 42),
+    "SBP": (60, 240),
+    "Resp": (4, 45),
+    "FiO2": (0.20, 1.00)
 }
 
-# Recorre las variables incluidas en el control de plausibilidad.
-for variable, (limite_inferior, limite_superior) in rangos_clinicos.items():
+for variable, (limite_inferior, limite_superior) in rangos_limpieza.items():
 
-    # Identifica los valores observados que quedan fuera del rango.
-    # Los valores nulos y NaN no se clasifican como fuera de rango.
+    # Identifica valores presentes pero fuera del rango acordado.
     condicion_fuera_rango = (
         col(variable).isNotNull()
         & (~isnan(col(variable)))
@@ -243,35 +227,29 @@ for variable, (limite_inferior, limite_superior) in rangos_clinicos.items():
         )
     )
 
-    # CAMBIO: crea un indicador de calidad sin borrar la variable original.
+    # Crea un indicador de valor no plausible.
     dataset = dataset.withColumn(
         variable + "_fuera_rango",
         when(condicion_fuera_rango, 1).otherwise(0)
     )
 
-    # CAMBIO: crea una versión depurada; los valores no plausibles
-    # se convierten en ausentes, pero se conserva la columna original.
+    # Crea una versión limpia, convirtiendo los valores no plausibles en nulos.
     dataset = dataset.withColumn(
         variable + "_limpia",
         when(
-            (
-                col(variable).isNotNull()
-                & (~isnan(col(variable)))
-                & (col(variable) >= limite_inferior)
-                & (col(variable) <= limite_superior)
-            ),
+            col(variable).isNotNull()
+            & (~isnan(col(variable)))
+            & (col(variable) >= limite_inferior)
+            & (col(variable) <= limite_superior),
             col(variable)
         ).otherwise(None)
     )
 
-    # Cuenta los registros marcados para revisar la magnitud del problema.
     fuera_rango = dataset.filter(
         col(variable + "_fuera_rango") == 1
     ).count()
 
-    porcentaje = (
-        fuera_rango / total_registros
-    ) * 100
+    porcentaje = (fuera_rango / total_registros) * 100
 
     print(
         f"{variable:10s}: "
@@ -279,9 +257,82 @@ for variable, (limite_inferior, limite_superior) in rangos_clinicos.items():
         f"({porcentaje:6.4f}%)"
     )
 
-print("\nLas variables originales se conservan para garantizar la trazabilidad.")
-print("Las versiones terminadas en '_limpia' se utilizarán en fases posteriores.")
+print("\nSe conservan las variables originales.")
+print("Las columnas '_limpia' contienen los valores clínicamente plausibles.")
 
+# ==========================================================
+# DEPURACIÓN CONSERVADORA DE VARIABLES ANALÍTICAS
+# ==========================================================
+
+# CAMBIO: se corrigen únicamente valores extremadamente improbables.
+# Estos límites son de plausibilidad, no intervalos normales de laboratorio.
+rangos_analiticos = {
+    "BaseExcess": (-40, 40),
+    "HCO3": (0.1, 55),
+    "Chloride": (50, 160),
+    "Potassium": (1.5, 10),
+    "Hgb": (2, 25)
+}
+
+for variable, (limite_inferior, limite_superior) in rangos_analiticos.items():
+
+    # Identifica valores presentes pero fuera del rango de plausibilidad.
+    condicion_fuera_rango = (
+        col(variable).isNotNull()
+        & (~isnan(col(variable)))
+        & (
+            (col(variable) < limite_inferior)
+            | (col(variable) > limite_superior)
+        )
+    )
+
+    # Crea un indicador sin modificar la variable original.
+    dataset = dataset.withColumn(
+        variable + "_fuera_rango",
+        when(condicion_fuera_rango, 1).otherwise(0)
+    )
+
+    # Crea una versión limpia, convirtiendo en nulos
+    # únicamente los valores extremadamente improbables.
+    dataset = dataset.withColumn(
+        variable + "_limpia",
+        when(
+            col(variable).isNotNull()
+            & (~isnan(col(variable)))
+            & (col(variable) >= limite_inferior)
+            & (col(variable) <= limite_superior),
+            col(variable)
+        ).otherwise(None)
+    )
+
+    fuera_rango = dataset.filter(
+        col(variable + "_fuera_rango") == 1
+    ).count()
+
+    porcentaje = (fuera_rango / total_registros) * 100
+
+    print(
+        f"{variable:15s}: "
+        f"{fuera_rango:8d} registros fuera de rango "
+        f"({porcentaje:6.4f}%)"
+    )
+
+print("\nSe conservan los valores analíticos extremos potencialmente reales.")
+print("Solo se convierten en nulos los valores claramente no plausibles.")
+
+
+# ==========================================================
+# VARIABLES PENDIENTES DE REVISIÓN
+# ==========================================================
+
+# CAMBIO: Calcium no se transforma automáticamente porque presenta
+# posibles diferencias de escala o tipo de determinación entre centros.
+variables_dudosas = [
+    "Calcium"
+]
+
+print("\nVariables pendientes de revisión específica:")
+print(variables_dudosas)
 #Variables temporales creo que hay que mirarlo despues 
 # COMPROBACIÓN DE VALORES NO PLAUSIBLES tambien creo que hay que eliminarlo porque creo que estaba dupblicado.
 # ==========================================================
