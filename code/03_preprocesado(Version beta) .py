@@ -347,6 +347,69 @@ print("\nSe conservan las variables originales.")
 print("Las columnas '_limpia' contienen los valores clínicamente plausibles.")
 
 # ==========================================================
+# COMPROBACIÓN DE COHERENCIA ENTRE PRESIONES ARTERIALES
+# ==========================================================
+
+# CAMBIO: se identifican relaciones no esperadas entre SBP, MAP y DBP.
+# No se eliminan registros porque las mediciones podrían proceder
+# de momentos o resúmenes horarios diferentes.
+
+condicion_dbp_mayor_map = (
+    col("DBP").isNotNull()
+    & (~isnan(col("DBP")))
+    & col("MAP").isNotNull()
+    & (~isnan(col("MAP")))
+    & (col("DBP") > col("MAP"))
+)
+
+condicion_map_mayor_sbp = (
+    col("MAP").isNotNull()
+    & (~isnan(col("MAP")))
+    & col("SBP").isNotNull()
+    & (~isnan(col("SBP")))
+    & (col("MAP") > col("SBP"))
+)
+
+condicion_dbp_mayor_sbp = (
+    col("DBP").isNotNull()
+    & (~isnan(col("DBP")))
+    & col("SBP").isNotNull()
+    & (~isnan(col("SBP")))
+    & (col("DBP") > col("SBP"))
+)
+
+# Crea indicadores de incoherencia sin modificar los valores originales.
+dataset = dataset.withColumn(
+    "DBP_mayor_MAP",
+    when(condicion_dbp_mayor_map, 1).otherwise(0)
+)
+
+dataset = dataset.withColumn(
+    "MAP_mayor_SBP",
+    when(condicion_map_mayor_sbp, 1).otherwise(0)
+)
+
+dataset = dataset.withColumn(
+    "DBP_mayor_SBP",
+    when(condicion_dbp_mayor_sbp, 1).otherwise(0)
+)
+
+# Resume el número de registros afectados.
+print("\nIncoherencias entre presiones arteriales:")
+print(
+    "DBP > MAP:",
+    dataset.filter(col("DBP_mayor_MAP") == 1).count()
+)
+print(
+    "MAP > SBP:",
+    dataset.filter(col("MAP_mayor_SBP") == 1).count()
+)
+print(
+    "DBP > SBP:",
+    dataset.filter(col("DBP_mayor_SBP") == 1).count()
+)
+
+# ==========================================================
 # DEPURACIÓN CONSERVADORA DE VARIABLES ANALÍTICAS
 # ==========================================================
 
