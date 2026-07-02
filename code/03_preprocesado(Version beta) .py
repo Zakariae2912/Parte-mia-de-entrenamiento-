@@ -554,4 +554,5 @@ print(
 
 dataset_persistido.unpersist()
 
+
 spark.stop()
