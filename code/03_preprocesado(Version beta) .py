@@ -221,6 +221,46 @@ dataset.select(
 print("\nEsquema del dataset:")
 dataset.printSchema()
 
+# ==========================================================
+# VALIDACIÓN DE IDENTIFICADORES Y VARIABLES CLAVE
+# ==========================================================
+
+# Comprueba que todos los registros tienen un patient_id válido.
+identificadores_invalidos = dataset.filter(
+    col("patient_id").isNull()
+    | (col("patient_id") == "")
+).count()
+
+# Comprueba que hospital solo contiene A o B.
+hospitales_invalidos = dataset.filter(
+    col("hospital").isNull()
+    | (
+        (col("hospital") != "A")
+        & (col("hospital") != "B")
+    )
+).count()
+
+# Comprueba que SepsisLabel solo contiene 0 o 1.
+sepsis_invalidas = dataset.filter(
+    col("SepsisLabel").isNotNull()
+    & (
+        (col("SepsisLabel") != 0)
+        & (col("SepsisLabel") != 1)
+    )
+).count()
+
+# Comprueba que ICULOS sea un valor positivo.
+iculos_invalidos = dataset.filter(
+    col("ICULOS").isNull()
+    | isnan(col("ICULOS"))
+    | (col("ICULOS") < 1)
+).count()
+
+print("\nValidación de variables clave:")
+print("Identificadores inválidos:", identificadores_invalidos)
+print("Hospitales inválidos:", hospitales_invalidos)
+print("Etiquetas de sepsis inválidas:", sepsis_invalidas)
+print("Valores ICULOS inválidos:", iculos_invalidos)
 
 # ==========================================================
 # ANÁLISIS DE VALORES PERDIDOS
