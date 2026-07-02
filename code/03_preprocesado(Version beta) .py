@@ -184,9 +184,6 @@ numero_pacientes = dataset.select(
 
 print("Número total de pacientes:", numero_pacientes)
 
-# Se calcula una sola vez para evitar repetir la misma operación Spark.
-total_registros = dataset.count()
-
 print("\nNúmero total de registros horarios:")
 print(total_registros)
 
@@ -553,17 +550,7 @@ print(
     ).distinct().count()
 )
 
-    StorageLevel.MEMORY_AND_DISK
-)
-
-# Materializa la persistencia mediante una primera acción Spark.
-dataset_persistido.count()
-
-# El resto del preprocesado se realiza sobre el dataset persistido.
-dataset = dataset_persistido
-
 # Libera el dataset almacenado en memoria y disco.
-dataset_persistido.unpersist()
 
 dataset_persistido.unpersist()
 
