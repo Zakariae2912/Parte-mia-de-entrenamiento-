@@ -27,7 +27,6 @@ spark.sparkContext.setLogLevel("ERROR")
 # ==========================================================
 
 # Defininicion de la carpeta principal donde se encuentra el dataset
-# Esta ruta deberá adaptarse si cambia entre máquinas
 ruta_base = "LA TUYA !!!!!!!!"
 
 # Define la ruta de todos los archivos PSV del conjunto A
@@ -601,6 +600,15 @@ print(variables_100)
 print("\nVariables con más del 95 % de valores perdidos:")
 print(variables_95)
 
+# CAMBIO: se eliminan únicamente las variables completamente vacías,
+# porque no contienen información útil para el análisis.
+if len(variables_100) > 0:
+    dataset = dataset.drop(*variables_100)
+
+    print("\nVariables completamente vacías eliminadas:")
+    print(variables_100)
+else:
+    print("\nNo existen variables completamente vacías.")
 # ==========================================================
 # DUPLICADOS HORARIOS CONFLICTIVOS
 # ==========================================================
