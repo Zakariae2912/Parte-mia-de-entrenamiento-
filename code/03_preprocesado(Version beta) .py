@@ -531,10 +531,25 @@ print(
     ).distinct().count()
 )
 
-
 # ==========================================================
-# CIERRE DE SPARK
+# PERSISTENCIA DEL DATASET
 # ==========================================================
 
-# Libera correctamente los recursos utilizados por Spark.
+# CAMBIO: se mantiene el dataset en memoria y disco porque será
+# utilizado repetidamente en recuentos, filtros y controles de calidad.
+dataset_persistido = dataset.persist(
+    StorageLevel.MEMORY_AND_DISK
+)
+
+# Materializa la persistencia mediante una primera acción Spark.
+dataset_persistido.count()
+
+# El resto del preprocesado se realiza sobre el dataset persistido.
+dataset = dataset_persistido
+
+# Libera el dataset almacenado en memoria y disco.
+dataset_persistido.unpersist()
+
+dataset_persistido.unpersist()
+
 spark.stop()
