@@ -504,20 +504,44 @@ print(variables_dudosas)
 # VARIABLES CONSERVADAS SIN DEPURACIÓN AUTOMÁTICA
 # ==========================================================
 
-# CAMBIO: estas variables se mantienen sin transformar porque sus
-# valores extremos pueden ser reales en pacientes críticos.
+# CAMBIO: estas variables se convierten a formato numérico y sus NaN
+# se normalizan como null, pero no se aplican límites automáticos.
+# Se revisarán durante el análisis exploratorio antes de decidir
+# si necesitan flags, versiones limpias o alguna transformación.
+
 variables_sin_depuracion_automatica = [
+
+    # Constantes y variables respiratorias
     "O2Sat",
+    "EtCO2",
     "MAP",
     "DBP",
-    "Lactate",
-    "AST",
+
+    # Gasometría
+    "pH",
+    "PaCO2",
+    "SaO2",
+
+    # Bioquímica
+    "BUN",
+    "Alkalinephos",
+    "Bilirubin_direct",
+    "Bilirubin_total",
+    "Magnesium",
+    "Phosphate",
     "Creatinine",
     "Glucose",
+    "Lactate",
+    "AST",
+
+    # Hematología y coagulación
+    "Hct",
     "WBC",
     "Platelets",
     "PTT",
     "Fibrinogen",
+
+    # Marcadores específicos
     "TroponinI"
 ]
 
