@@ -28,7 +28,7 @@ spark.sparkContext.setLogLevel("ERROR")
 
 # Defininicion de la carpeta principal donde se encuentra el dataset
 # Esta ruta deberá adaptarse si cambia entre máquinas
-ruta_base = "/home/adminp/BIGDATA-EARLYSEPSIS2019/parquet/dataset_preprocesado"
+ruta_base = "LA TUYA !!!!!!!!"
 
 # Define la ruta de todos los archivos PSV del conjunto A
 ruta_setA = ruta_base + "/training_setA/*.psv"
