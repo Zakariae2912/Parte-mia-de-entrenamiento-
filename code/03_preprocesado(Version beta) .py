@@ -230,7 +230,8 @@ print("\n" + "=" * 70)
 print("PORCENTAJE DE VALORES PERDIDOS")
 print("=" * 70)
 
-# CAMBIO: se mantiene este análisis porque permite evaluar
+# Guarda los porcentajes para reutilizarlos posteriormente.
+porcentajes_perdidos = {}
 # la calidad de las variables antes de aplicar el preprocesado.
 for variable in variables_numericas:
 
@@ -242,6 +243,7 @@ for variable in variables_numericas:
 
     # Calcula el porcentaje de valores ausentes.
     porcentaje = (nulos / total_registros) * 100
+    porcentajes_perdidos[variable] = porcentaje
 
     print(f"{variable:20s}: {porcentaje:6.2f}%")
 
@@ -379,6 +381,29 @@ print("\nVariables pendientes de revisión específica:")
 print(variables_dudosas)
 
 # ==========================================================
+# VARIABLES CONSERVADAS SIN DEPURACIÓN AUTOMÁTICA
+# ==========================================================
+
+# CAMBIO: estas variables se mantienen sin transformar porque sus
+# valores extremos pueden ser reales en pacientes críticos.
+variables_sin_depuracion_automatica = [
+    "O2Sat",
+    "MAP",
+    "DBP",
+    "Lactate",
+    "AST",
+    "Creatinine",
+    "Glucose",
+    "WBC",
+    "Platelets",
+    "PTT",
+    "Fibrinogen",
+    "TroponinI"
+]
+
+print("\nVariables conservadas sin depuración automática:")
+print(variables_sin_depuracion_automatica)
+# ==========================================================
 # COMPROBACIÓN DE LAS VARIABLES DEPURADAS
 # ==========================================================
 
@@ -437,21 +462,11 @@ print("=" * 70)
 # VARIABLES CON ELEVADA PROPORCIÓN DE VALORES PERDIDOS
 # ==========================================================
 
-# Identifica variables completamente vacías o con más del 95 % de ausentes.
+# Reutiliza los porcentajes calculados anteriormente.
 variables_95 = []
 variables_100 = []
 
-for variable in variables_numericas:
-
-    # Cuenta conjuntamente los valores nulos y NaN.
-    valores_perdidos = dataset.filter(
-        col(variable).isNull()
-        | isnan(col(variable))
-    ).count()
-
-    porcentaje_perdidos = (
-        valores_perdidos / total_registros
-    ) * 100
+for variable, porcentaje_perdidos in porcentajes_perdidos.items():
 
     if porcentaje_perdidos == 100:
         variables_100.append(variable)
