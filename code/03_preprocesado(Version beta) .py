@@ -120,6 +120,25 @@ for variable in variables_numericas:
 print("\nDataset leído, unido y convertido correctamente.")
 
 # ==========================================================
+# NORMALIZACIÓN DE VALORES PERDIDOS
+# ==========================================================
+
+# CAMBIO: todos los valores NaN se convierten en null para que
+# los datos ausentes tengan una única representación en el dataset.
+for variable in variables_numericas:
+    dataset = dataset.withColumn(
+        variable,
+        when(
+            isnan(col(variable)),
+            None
+        ).otherwise(
+            col(variable)
+        )
+    )
+
+print("\nValores NaN normalizados como null.")
+
+# ==========================================================
 # TRATAMIENTO DE REGISTROS DUPLICADOS
 # ==========================================================
 
@@ -140,7 +159,6 @@ duplicados_exactos_eliminados = (
 
 print("\nNúmero de duplicados exactos eliminados:")
 print(duplicados_exactos_eliminados)
-
 # ==========================================================
 # PERSISTENCIA DEL DATASET
 # ==========================================================
