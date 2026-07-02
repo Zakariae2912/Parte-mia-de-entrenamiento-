@@ -377,6 +377,50 @@ variables_dudosas = [
 
 print("\nVariables pendientes de revisión específica:")
 print(variables_dudosas)
+
+# ==========================================================
+# COMPROBACIÓN DE LAS VARIABLES DEPURADAS
+# ==========================================================
+
+# CAMBIO: se comprueba el resultado de la depuración para conocer
+# cuántos valores válidos conserva cada columna limpia.
+variables_depuradas = [
+    "HR",
+    "Temp",
+    "SBP",
+    "Resp",
+    "FiO2",
+    "BaseExcess",
+    "HCO3",
+    "Chloride",
+    "Potassium",
+    "Hgb"
+]
+
+print("\nResumen de las variables depuradas:")
+
+for variable in variables_depuradas:
+
+    columna_limpia = variable + "_limpia"
+    columna_flag = variable + "_fuera_rango"
+
+    # Cuenta los valores conservados en la versión limpia.
+    valores_validos = dataset.filter(
+        col(columna_limpia).isNotNull()
+        & (~isnan(col(columna_limpia)))
+    ).count()
+
+    # Cuenta los valores convertidos en nulos por no ser plausibles.
+    valores_depurados = dataset.filter(
+        col(columna_flag) == 1
+    ).count()
+
+    print(
+        f"{variable:15s}: "
+        f"{valores_validos:8d} valores válidos | "
+        f"{valores_depurados:6d} valores depurados"
+    )
+    
 # ==========================================================
 # CONTROLES FINALES DE CALIDAD
 # ==========================================================
