@@ -333,8 +333,6 @@ variables_dudosas = [
 
 print("\nVariables pendientes de revisión específica:")
 print(variables_dudosas)
-#Variables temporales creo que hay que mirarlo despues 
-# COMPROBACIÓN DE VALORES NO PLAUSIBLES tambien creo que hay que eliminarlo porque creo que estaba dupblicado.
 # ==========================================================
 # CONTROLES FINALES DE CALIDAD
 # ==========================================================
@@ -379,14 +377,37 @@ print(variables_100)
 print("\nVariables con más del 95 % de valores perdidos:")
 print(variables_95)
 
+# ==========================================================
+# TRATAMIENTO DE REGISTROS DUPLICADOS
+# ==========================================================
+
+# Guarda el número de registros antes de eliminar duplicados exactos.
+registros_antes_duplicados = dataset.count()
+
+# CAMBIO: se eliminan únicamente las filas completamente idénticas,
+# porque representan información repetida sin aportar datos nuevos.
+dataset = dataset.dropDuplicates()
+
+# Actualiza el número de registros después de la eliminación.
+registros_despues_duplicados = dataset.count()
+
+duplicados_exactos_eliminados = (
+    registros_antes_duplicados
+    - registros_despues_duplicados
+)
+
+print("\nNúmero de duplicados exactos eliminados:")
+print(duplicados_exactos_eliminados)
+
+# Actualiza el total de registros tras eliminar duplicados exactos.
+total_registros = registros_despues_duplicados
 
 # ==========================================================
-# COMPROBACIÓN DE DUPLICADOS
+# DUPLICADOS HORARIOS CONFLICTIVOS
 # ==========================================================
 
-# CAMBIO: se utiliza hospital + patient_id + ICULOS para evitar
-# considerar iguales registros pertenecientes a centros diferentes.
-duplicados = dataset.groupBy(
+# Comprueba si existen varias filas para el mismo paciente y hora.
+duplicados_temporales = dataset.groupBy(
     "hospital",
     "patient_id",
     "ICULOS"
@@ -394,12 +415,23 @@ duplicados = dataset.groupBy(
     col("count") > 1
 )
 
+numero_duplicados_temporales = duplicados_temporales.count()
+
 print(
-    "\nNúmero de registros duplicados por "
+    "\nCombinaciones repetidas de "
     "hospital + patient_id + ICULOS:"
 )
-print(duplicados.count())
+print(numero_duplicados_temporales)
 
+# CAMBIO: los registros de la misma hora con valores diferentes
+# no se eliminan automáticamente para evitar perder información.
+if numero_duplicados_temporales > 0:
+    print(
+        "Existen registros horarios conflictivos "
+        "que deberán revisarse."
+    )
+else:
+    print("No existen registros horarios conflictivos.")
 
 # ==========================================================
 # RESUMEN DE LA COBERTURA TEMPORAL
@@ -420,6 +452,89 @@ print("\nResumen temporal básico por paciente:")
 resumen_temporal.show(10, truncate=False)
 
 
-# CAMBIO: no se utiliza repartition(8), ya que fijar el número de
-# particiones sin estudiar el entorno podría empeorar el rendimiento.
+# ==========================================================
+# VALIDACIÓN FINAL DEL DATASET PREPROCESADO
+# ==========================================================
 
+# CAMBIO: se comprueba el estado final del dataset antes de guardarlo.
+registros_finales = dataset.count()
+
+pacientes_finales = dataset.select(
+    "hospital",
+    "patient_id"
+).distinct().count()
+
+numero_columnas_finales = len(dataset.columns)
+
+print("\n" + "=" * 70)
+print("VALIDACIÓN FINAL DEL DATASET PREPROCESADO")
+print("=" * 70)
+
+print("Número final de registros:", registros_finales)
+print("Número final de pacientes:", pacientes_finales)
+print("Número final de columnas:", numero_columnas_finales)
+
+# Comprueba que los pacientes siguen correctamente distribuidos por hospital.
+print("\nNúmero final de pacientes por hospital:")
+
+dataset.select(
+    "hospital",
+    "patient_id"
+).distinct() \
+ .groupBy("hospital") \
+ .count() \
+ .orderBy("hospital") \
+ .show()
+
+
+# ==========================================================
+# GUARDADO DEL DATASET PREPROCESADO
+# ==========================================================
+
+# CAMBIO: se guarda el dataset completo, incluyendo las variables
+# originales, las variables limpias y los indicadores de calidad.
+# La ruta deberá adaptarse si cambia la ubicación del proyecto.
+ruta_salida_local = (
+    "/home/adminp/BIGDATA-EARLYSEPSIS2019/"
+    "parquet/dataset_preprocesado"
+)
+
+ruta_salida_spark = "file://" + ruta_salida_local
+
+dataset.write \
+    .mode("overwrite") \
+    .option("compression", "snappy") \
+    .parquet(ruta_salida_spark)
+
+print("\nDataset preprocesado guardado correctamente en:")
+print(ruta_salida_local)
+
+
+# ==========================================================
+# COMPROBACIÓN DEL PARQUET GENERADO
+# ==========================================================
+
+# CAMBIO: se vuelve a leer el Parquet para comprobar que se ha
+# guardado correctamente y que conserva filas y pacientes.
+dataset_comprobacion = spark.read.parquet(
+    ruta_salida_spark
+)
+
+print("\nRegistros recuperados del Parquet:")
+print(dataset_comprobacion.count())
+
+print("\nPacientes recuperados del Parquet:")
+print(
+    dataset_comprobacion.select(
+        "hospital",
+        "patient_id"
+    ).distinct().count()
+)
+
+
+# ==========================================================
+# CIERRE DE SPARK
+# ==========================================================
+
+# Libera correctamente los recursos utilizados por Spark.
+spark.stop()
