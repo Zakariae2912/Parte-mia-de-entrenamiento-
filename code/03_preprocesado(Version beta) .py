@@ -1,8 +1,16 @@
-from pyspark.sql import SparkSession, Window
-from pyspark.sql.functions import col, input_file_name, regexp_extract, lit, isnan, when, avg, stddev, min, max, count, lag, first, countDistinct, min as  spark_min, max as spark_max, avg, coalesce, round
+from pyspark.sql import SparkSession
+from pyspark.sql.functions import (
+    col,
+    input_file_name,
+    regexp_extract,
+    lit,
+    isnan,
+    when,
+    min,
+    max,
+    count
+)
 from pyspark.storagelevel import StorageLevel
-import os
-
 
 # CREACIÓN DE LA SESIÓN SPARK
 spark = SparkSession.builder \
@@ -110,6 +118,45 @@ for variable in variables_numericas:
     )
 
 print("\nDataset leído, unido y convertido correctamente.")
+
+# ==========================================================
+# TRATAMIENTO DE REGISTROS DUPLICADOS
+# ==========================================================
+
+# Guarda el número de registros antes de eliminar duplicados exactos.
+registros_antes_duplicados = dataset.count()
+
+# CAMBIO: se eliminan únicamente las filas completamente idénticas,
+# porque representan información repetida sin aportar datos nuevos.
+dataset = dataset.dropDuplicates()
+
+# Actualiza el número de registros después de la eliminación.
+registros_despues_duplicados = dataset.count()
+
+duplicados_exactos_eliminados = (
+    registros_antes_duplicados
+    - registros_despues_duplicados
+)
+
+print("\nNúmero de duplicados exactos eliminados:")
+print(duplicados_exactos_eliminados)
+
+# ==========================================================
+# PERSISTENCIA DEL DATASET
+# ==========================================================
+
+# CAMBIO: se mantiene el dataset en memoria y disco porque se
+# reutilizará en numerosos filtros, recuentos y agrupaciones.
+dataset_persistido = dataset.persist(
+    StorageLevel.MEMORY_AND_DISK
+)
+
+# Materializa la persistencia y guarda el total de registros.
+total_registros = dataset_persistido.count()
+
+# El resto del preprocesado utiliza el dataset persistido.
+dataset = dataset_persistido
+
 
 
 # ==========================================================
@@ -378,31 +425,6 @@ print("\nVariables con más del 95 % de valores perdidos:")
 print(variables_95)
 
 # ==========================================================
-# TRATAMIENTO DE REGISTROS DUPLICADOS
-# ==========================================================
-
-# Guarda el número de registros antes de eliminar duplicados exactos.
-registros_antes_duplicados = dataset.count()
-
-# CAMBIO: se eliminan únicamente las filas completamente idénticas,
-# porque representan información repetida sin aportar datos nuevos.
-dataset = dataset.dropDuplicates()
-
-# Actualiza el número de registros después de la eliminación.
-registros_despues_duplicados = dataset.count()
-
-duplicados_exactos_eliminados = (
-    registros_antes_duplicados
-    - registros_despues_duplicados
-)
-
-print("\nNúmero de duplicados exactos eliminados:")
-print(duplicados_exactos_eliminados)
-
-# Actualiza el total de registros tras eliminar duplicados exactos.
-total_registros = registros_despues_duplicados
-
-# ==========================================================
 # DUPLICADOS HORARIOS CONFLICTIVOS
 # ==========================================================
 
@@ -531,13 +553,6 @@ print(
     ).distinct().count()
 )
 
-# ==========================================================
-# PERSISTENCIA DEL DATASET
-# ==========================================================
-
-# CAMBIO: se mantiene el dataset en memoria y disco porque será
-# utilizado repetidamente en recuentos, filtros y controles de calidad.
-dataset_persistido = dataset.persist(
     StorageLevel.MEMORY_AND_DISK
 )
 
