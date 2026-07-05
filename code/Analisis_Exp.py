@@ -835,6 +835,7 @@ exportar_tabla_csv(
 print("\nTablas del análisis exploratorio exportadas en:")
 print(ruta_resultados_eda_local)
 
+
 # Resumen final
 
 print("\n" + "=" * 70)
@@ -847,8 +848,8 @@ print("- Recuento de registros, pacientes y variables.")
 print("- Comprobación de variables clave.")
 print("- Distribución de registros y pacientes por hospital.")
 print("- Construcción de un dataset a nivel paciente.")
-print("- Descripción global de la cohorte.")
-print("- Análisis de pacientes con y sin sepsis.")
+print("- Descripción global de la cohorte con media, desviación estándar, mediana e IQR.")
+print("- Análisis de pacientes con y sin sepsis, incluyendo porcentajes.")
 print("- Comparación intercentro a nivel paciente.")
 print("- Comparación entre pacientes con y sin sepsis.")
 print("- Revisión de valores perdidos globales y por hospital.")
@@ -858,6 +859,7 @@ print("- Revisión específica de Calcium.")
 print("- Comparación de variables clínicas principales por SepsisLabel.")
 print("- Revisión descriptiva de variables temporales.")
 print("- Revisión de tendencias durante las primeras 24 horas.")
+print("- Exportación de tablas principales del análisis exploratorio.")
 
 print("\nNo se han aplicado nuevas limpiezas ni transformaciones definitivas.")
 print("El objetivo ha sido explorar, validar y resumir el dataset preprocesado.")
