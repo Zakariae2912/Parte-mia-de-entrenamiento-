@@ -155,3 +155,89 @@ guardar_grafico_plotly(
     fig_pacientes_hospital,
     "02_pacientes_por_hospital.html"
 )
+
+# ==========================================================
+# 6. SEPSIS GLOBAL Y POR HOSPITAL
+# ==========================================================
+
+print("\n" + "=" * 70)
+print("6. SEPSIS GLOBAL Y POR HOSPITAL")
+print("=" * 70)
+
+
+# Septicos vs No Septicos.
+
+tabla_sepsis_global = dataset_paciente.groupBy(
+    "paciente_con_sepsis"
+).agg(
+    F.count("*").alias("n_pacientes")
+).withColumn(
+    "grupo",
+    F.when(
+        F.col("paciente_con_sepsis") == 1,
+        F.lit("Con sepsis")
+    ).otherwise(
+        F.lit("Sin sepsis")
+    )
+).withColumn(
+    "porcentaje",
+    F.round(
+        100 * F.col("n_pacientes") / F.lit(n_pacientes),
+        2
+    )
+).orderBy(
+    "paciente_con_sepsis"
+)
+
+fig_sepsis_global = px.bar(
+    spark_a_pandas(tabla_sepsis_global),
+    x="grupo",
+    y="n_pacientes",
+    title="Pacientes con y sin sepsis",
+    labels={
+        "grupo": "Grupo",
+        "n_pacientes": "Número de pacientes"
+    },
+    hover_data=["porcentaje"]
+)
+
+guardar_grafico_plotly(
+    fig_sepsis_global,
+    "03_pacientes_con_sin_sepsis.html"
+)
+
+
+tabla_sepsis_hospital = dataset_paciente.groupBy(
+    "hospital"
+).agg(
+    F.count("*").alias("n_pacientes"),
+    F.sum("paciente_con_sepsis").alias("n_pacientes_sepsis")
+).withColumn(
+    "porcentaje_sepsis",
+    F.round(
+        100 * F.col("n_pacientes_sepsis") / F.col("n_pacientes"),
+        2
+    )
+).orderBy(
+    "hospital"
+)
+
+fig_sepsis_hospital = px.bar(
+    spark_a_pandas(tabla_sepsis_hospital),
+    x="hospital",
+    y="porcentaje_sepsis",
+    title="Porcentaje de pacientes con sepsis por hospital",
+    labels={
+        "hospital": "Hospital",
+        "porcentaje_sepsis": "Pacientes con sepsis (%)"
+    },
+    hover_data=[
+        "n_pacientes",
+        "n_pacientes_sepsis"
+    ]
+)
+
+guardar_grafico_plotly(
+    fig_sepsis_hospital,
+    "04_porcentaje_sepsis_por_hospital.html"
+)
