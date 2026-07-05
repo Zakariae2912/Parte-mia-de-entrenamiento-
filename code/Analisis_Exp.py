@@ -179,36 +179,88 @@ dataset_paciente.groupBy("Unit2") \
 #Sépticos y no sépticos: 
 
 print("\n" + "=" * 70)
-print("Sépticos y no sépticos: ")
+print("Septicos y no septicos")
 print("=" * 70)
 
 print("\nDistribución global de pacientes con y sin sepsis:")
 
-dataset_paciente.groupBy("paciente_con_sepsis") \
-    .count() \
-    .orderBy("paciente_con_sepsis") \
-    .show()
+tabla_sepsis_global = dataset_paciente.groupBy(
+    "paciente_con_sepsis"
+).agg(
+    F.count("*").alias("n_pacientes")
+).withColumn(
+    "porcentaje",
+    F.round(
+        100 * F.col("n_pacientes") / F.lit(total_pacientes),
+        2
+    )
+).orderBy("paciente_con_sepsis")
+
+tabla_sepsis_global.show()
+
 
 print("\nDistribución de pacientes con y sin sepsis por hospital:")
 
-dataset_paciente.groupBy(
+totales_hospital = dataset_paciente.groupBy("hospital").agg(
+    F.count("*").alias("total_pacientes_hospital")
+)
+
+tabla_sepsis_hospital = dataset_paciente.groupBy(
     "hospital",
     "paciente_con_sepsis"
-).count() \
- .orderBy("hospital", "paciente_con_sepsis") \
- .show()
+).agg(
+    F.count("*").alias("n_pacientes")
+).join(
+    totales_hospital,
+    on="hospital",
+    how="left"
+).withColumn(
+    "porcentaje_hospital",
+    F.round(
+        100 * F.col("n_pacientes") / F.col("total_pacientes_hospital"),
+        2
+    )
+).orderBy(
+    "hospital",
+    "paciente_con_sepsis"
+)
+
+tabla_sepsis_hospital.show()
+
 
 print("\nResumen de la primera hora de aparición de SepsisLabel = 1:")
 
-dataset_paciente.filter(
+dataset_paciente_sepsis = dataset_paciente.filter(
     F.col("paciente_con_sepsis") == 1
-).agg(
+)
+
+resumen_primera_sepsis = dataset_paciente_sepsis.agg(
     F.count("*").alias("n_pacientes_sepsis"),
     F.mean("primera_hora_sepsis").alias("media_horas"),
     F.stddev("primera_hora_sepsis").alias("desv_std"),
     F.min("primera_hora_sepsis").alias("min_horas"),
     F.max("primera_hora_sepsis").alias("max_horas")
-).show(truncate=False)
+)
+
+resumen_primera_sepsis.show(truncate=False)
+
+
+# Mediana y rango intercuartílico de la primera hora de sepsis.
+# Es importante porque el tiempo hasta sepsis suele tener distribución asimétrica.
+
+if dataset_paciente_sepsis.count() > 0:
+
+    cuantiles_primera_sepsis = dataset_paciente_sepsis.approxQuantile(
+        "primera_hora_sepsis",
+        [0.25, 0.50, 0.75],
+        0.01
+    )
+
+    print("\nPrimera hora de sepsis - p25, mediana, p75:")
+    print(cuantiles_primera_sepsis)
+
+else:
+    print("\nNo hay pacientes con sepsis para calcular cuantiles.")
 
 # 7. Comparacion intercentro
 
