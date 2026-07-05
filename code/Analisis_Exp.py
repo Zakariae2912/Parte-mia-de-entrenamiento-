@@ -602,3 +602,43 @@ if "Calcium" in dataset.columns:
 
 else:
     print("La variable Calcium no está presente en el dataset.")
+
+# VARIABLES CLÍNICAS PRINCIPALES POR SepsisLabel
+# ==========================================================
+
+print("\n" + "=" * 70)
+print("VARIABLES CLÍNICAS PRINCIPALES POR SepsisLabel")
+print("=" * 70)
+
+variables_clinicas_principales = [
+    "HR_limpia",
+    "Temp_limpia",
+    "SBP_limpia",
+    "Resp_limpia",
+    "FiO2_limpia",
+    "MAP",
+    "Lactate",
+    "O2Sat_combined",
+    "BaseExcess_limpia",
+    "HCO3_limpia",
+    "Potassium_limpia",
+    "Hgb_limpia"
+]
+
+variables_clinicas_principales = [
+    variable for variable in variables_clinicas_principales
+    if variable in dataset.columns
+]
+
+for variable in variables_clinicas_principales:
+
+    print(f"\nVariable: {variable}")
+
+    dataset.groupBy("SepsisLabel").agg(
+        F.count(variable).alias("n_validos"),
+        F.mean(variable).alias("media"),
+        F.stddev(variable).alias("desv_std"),
+        F.min(variable).alias("minimo"),
+        F.max(variable).alias("maximo")
+    ).orderBy("SepsisLabel") \
+     .show(truncate=False)
