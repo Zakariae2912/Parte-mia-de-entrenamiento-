@@ -241,3 +241,89 @@ guardar_grafico_plotly(
     fig_sepsis_hospital,
     "04_porcentaje_sepsis_por_hospital.html"
 )
+
+
+# Genero, Edad Y Duracion UCI
+
+print("\n" + "=" * 70)
+print("7. Genero, Edad Y Duracion en UCI")
+print("=" * 70)
+
+
+# ----------------------------------------------------------
+# Distribución por sexo
+# ----------------------------------------------------------
+
+tabla_genero = dataset_paciente.groupBy(
+    "Gender"
+).agg(
+    F.count("*").alias("n_pacientes")
+).withColumn(
+    "porcentaje",
+    F.round(
+        100 * F.col("n_pacientes") / F.lit(n_pacientes),
+        2
+    )
+).orderBy(
+    "Gender"
+)
+
+fig_genero = px.bar(
+    spark_a_pandas(tabla_genero),
+    x="Gender",
+    y="n_pacientes",
+    title="Distribución de pacientes por genero",
+    labels={
+        "Gender": "Gender",
+        "n_pacientes": "Número de pacientes"
+    },
+    hover_data=["porcentaje"]
+)
+
+guardar_grafico_plotly(
+    fig_genero,
+    "05_distribucion_genero.html"
+)
+
+
+edad_pandas = dataset_paciente.select(
+    "Age"
+).filter(
+    F.col("Age").isNotNull()
+).toPandas()
+
+fig_edad = px.histogram(
+    edad_pandas,
+    x="Age",
+    nbins=40,
+    title="Distribución de edad",
+    labels={
+        "Age": "Edad"
+    }
+)
+
+guardar_grafico_plotly(
+    fig_edad,
+    "06_distribucion_edad.html"
+)
+
+iculos_pandas = dataset_paciente.select(
+    "ICULOS_max"
+).filter(
+    F.col("ICULOS_max").isNotNull()
+).toPandas()
+
+fig_iculos = px.histogram(
+    iculos_pandas,
+    x="ICULOS_max",
+    nbins=50,
+    title="Distribución de la duración máxima del seguimiento en UCI",
+    labels={
+        "ICULOS_max": "ICULOS máximo"
+    }
+)
+
+guardar_grafico_plotly(
+    fig_iculos,
+    "07_distribucion_iculos_max.html"
+)
