@@ -285,20 +285,35 @@ resumen_hospital = dataset_paciente.groupBy("hospital").agg(
 
 resumen_hospital.show(truncate=False)
 
-# Sepsis vs No Sepsis
+# Sepsis vs No Sepsis a nivel paciente
+# Ademas de la desviacion y media para el tipo de dataset es interesante añadir Percentil(25/75) y Mediana
 
 print("\n" + "=" * 70)
-print("Sepsis vs No Sepsis")
+print("Sepsis vs No Sepsis a nivel paciente")
 print("=" * 70)
 
-dataset_paciente.groupBy("paciente_con_sepsis").agg(
+
+comparacion_sepsis = dataset_paciente.groupBy(
+    "paciente_con_sepsis"
+).agg(
     F.count("*").alias("n_pacientes"),
+
     F.mean("Age").alias("edad_media"),
     F.stddev("Age").alias("edad_desv_std"),
+    F.expr("percentile_approx(Age, 0.25, 10000)").alias("edad_p25"),
+    F.expr("percentile_approx(Age, 0.50, 10000)").alias("edad_mediana"),
+    F.expr("percentile_approx(Age, 0.75, 10000)").alias("edad_p75"),
+
     F.mean("ICULOS_max").alias("iculos_max_media"),
-    F.stddev("ICULOS_max").alias("iculos_max_desv_std")
-).orderBy("paciente_con_sepsis") \
- .show(truncate=False)
+    F.stddev("ICULOS_max").alias("iculos_max_desv_std"),
+    F.expr("percentile_approx(ICULOS_max, 0.25, 10000)").alias("iculos_max_p25"),
+    F.expr("percentile_approx(ICULOS_max, 0.50, 10000)").alias("iculos_max_mediana"),
+    F.expr("percentile_approx(ICULOS_max, 0.75, 10000)").alias("iculos_max_p75")
+).orderBy(
+    "paciente_con_sepsis"
+)
+
+comparacion_sepsis.show(truncate=False)
 
 # 
 # Valores perdidos globales.
