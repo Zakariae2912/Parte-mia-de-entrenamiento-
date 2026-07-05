@@ -76,9 +76,8 @@ print("Número total de pacientes:", n_pacientes)
 print("\nPrimeras filas del dataset a nivel paciente:")
 dataset_paciente.show(5, truncate=False)
 
-# ==========================================================
-# FUNCIÓN AUXILIAR PARA GUARDAR GRÁFICOS
-# ==========================================================
+
+# Guardar graficos
 
 def guardar_grafico_plotly(figura, nombre_archivo):
   
@@ -98,3 +97,61 @@ def guardar_grafico_plotly(figura, nombre_archivo):
 def spark_a_pandas(tabla_spark):
   
     return tabla_spark.toPandas()
+
+
+# Pacientes y registros por hospital
+
+print("\n" + "=" * 70)
+print("Pacientes y registros por hospital")
+print("=" * 70)
+
+
+
+tabla_registros_hospital = dataset.groupBy(
+    "hospital"
+).agg(
+    F.count("*").alias("n_registros")
+).orderBy(
+    "hospital"
+)
+
+fig_registros_hospital = px.bar(
+    spark_a_pandas(tabla_registros_hospital),
+    x="hospital",
+    y="n_registros",
+    title="Registros horarios por hospital",
+    labels={
+        "hospital": "Hospital",
+        "n_registros": "Número de registros horarios"
+    }
+)
+
+guardar_grafico_plotly(
+    fig_registros_hospital,
+    "01_registros_por_hospital.html"
+)
+
+
+tabla_pacientes_hospital = dataset_paciente.groupBy(
+    "hospital"
+).agg(
+    F.count("*").alias("n_pacientes")
+).orderBy(
+    "hospital"
+)
+
+fig_pacientes_hospital = px.bar(
+    spark_a_pandas(tabla_pacientes_hospital),
+    x="hospital",
+    y="n_pacientes",
+    title="Pacientes únicos por hospital",
+    labels={
+        "hospital": "Hospital",
+        "n_pacientes": "Número de pacientes"
+    }
+)
+
+guardar_grafico_plotly(
+    fig_pacientes_hospital,
+    "02_pacientes_por_hospital.html"
+)
