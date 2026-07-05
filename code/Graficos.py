@@ -250,9 +250,8 @@ print("7. Genero, Edad Y Duracion en UCI")
 print("=" * 70)
 
 
-# ----------------------------------------------------------
-# Distribución por sexo
-# ----------------------------------------------------------
+
+# Distribución por Genero
 
 tabla_genero = dataset_paciente.groupBy(
     "Gender"
