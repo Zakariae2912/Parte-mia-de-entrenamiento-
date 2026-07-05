@@ -416,3 +416,4 @@ if len(tablas_missing) > 0:
 
 else:
     print("No se encontraron variables clínicas para calcular missing.")
+
