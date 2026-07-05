@@ -603,11 +603,10 @@ if "Calcium" in dataset.columns:
 else:
     print("La variable Calcium no está presente en el dataset.")
 
-# VARIABLES CLÍNICAS PRINCIPALES POR SepsisLabel
-# ==========================================================
+# Varibales por SepsisLabel
 
 print("\n" + "=" * 70)
-print("VARIABLES CLÍNICAS PRINCIPALES POR SepsisLabel")
+print("Variables por SepsisLabel")
 print("=" * 70)
 
 variables_clinicas_principales = [
