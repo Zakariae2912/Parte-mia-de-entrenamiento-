@@ -868,3 +868,259 @@ for variable in variables_vitales:
         fig_vital,
         variable + "_por_sepsislabel.html"
     )
+
+# Alteracion acido-base y metabolismo.
+
+print("\n" + "=" * 70)
+print("Alteracion acido-base y metabolismo")
+print("=" * 70)
+
+variables_metabolicas = [
+    "BaseExcess_limpia",
+    "HCO3_limpia",
+    "Potassium_limpia"
+]
+
+variables_metabolicas = [
+    variable for variable in variables_metabolicas
+    if variable in dataset.columns
+]
+
+for variable in variables_metabolicas:
+
+    metabolica_pandas = dataset.select(
+        "SepsisLabel",
+        variable
+    ).filter(
+        F.col(variable).isNotNull()
+    ).withColumn(
+        "grupo_sepsis",
+        F.when(
+            F.col("SepsisLabel") == 1,
+            F.lit("SepsisLabel = 1")
+        ).otherwise(
+            F.lit("SepsisLabel = 0")
+        )
+    ).toPandas()
+
+    fig_metabolica = px.box(
+        metabolica_pandas,
+        x="grupo_sepsis",
+        y=variable,
+        title=variable + " por SepsisLabel",
+        labels={
+            "grupo_sepsis": "Grupo",
+            variable: variable
+        }
+    )
+
+    guardar_grafico_plotly(
+        fig_metabolica,
+        variable + "_por_sepsislabel.html"
+    )
+
+if len(variables_metabolicas) == 0:
+    print("No se encontraron variables metabólicas limpias en el dataset.")
+
+# Disfuncion organica e inflmacion
+
+print("\n" + "=" * 70)
+print("Disfuncion organica e inflmacion.")
+print("=" * 70)
+
+
+
+variables_organicas = [
+    "Creatinine",
+    "Platelets",
+    "WBC",
+    "Hgb_limpia"
+]
+
+variables_organicas = [
+    variable for variable in variables_organicas
+    if variable in dataset.columns
+]
+
+for variable in variables_organicas:
+
+    organica_pandas = dataset.select(
+        "SepsisLabel",
+        variable
+    ).filter(
+        F.col(variable).isNotNull()
+    ).withColumn(
+        "grupo_sepsis",
+        F.when(
+            F.col("SepsisLabel") == 1,
+            F.lit("SepsisLabel = 1")
+        ).otherwise(
+            F.lit("SepsisLabel = 0")
+        )
+    ).toPandas()
+
+    fig_organica = px.box(
+        organica_pandas,
+        x="grupo_sepsis",
+        y=variable,
+        title=variable + " por SepsisLabel",
+        labels={
+            "grupo_sepsis": "Grupo",
+            variable: variable
+        }
+    )
+
+    guardar_grafico_plotly(
+        fig_organica,
+        variable + "_por_sepsislabel.html"
+    )
+
+if len(variables_organicas) == 0:
+    print("No se encontraron variables de disfunción orgánica/inflamación en el dataset.")
+
+
+# Calcium y Flags de calidad.
+
+print("\n" + "=" * 70)
+print("Calcium y flags de calidad")
+print("=" * 70)
+
+
+# Calciun por hospital
+
+if "Calcium" in dataset.columns:
+
+    calcium_pandas = dataset.select(
+        "hospital",
+        "Calcium"
+    ).filter(
+        F.col("Calcium").isNotNull()
+    ).toPandas()
+
+    if len(calcium_pandas) > 0:
+
+        fig_calcium = px.box(
+            calcium_pandas,
+            x="hospital",
+            y="Calcium",
+            title="Calcium por hospital",
+            labels={
+                "hospital": "Hospital",
+                "Calcium": "Calcium"
+            }
+        )
+
+        guardar_grafico_plotly(
+            fig_calcium,
+            "Calcium_por_hospital.html"
+        )
+
+    else:
+        print("Calcium no tiene valores disponibles para graficar.")
+
+else:
+    print("La variable Calcium no está disponible.")
+
+
+# Flags de valores fuera de rango
+
+
+flags_fuera_rango = [
+    columna for columna in dataset.columns
+    if columna.endswith("_fuera_rango")
+]
+
+flags_presion = [
+    "DBP_mayor_MAP",
+    "MAP_mayor_SBP",
+    "DBP_mayor_SBP"
+]
+
+flags_presion = [
+    flag for flag in flags_presion
+    if flag in dataset.columns
+]
+
+flags_calidad = flags_fuera_rango + flags_presion
+
+filas_flags_calidad = []
+
+for flag in flags_calidad:
+
+    n_flag = dataset.filter(
+        F.col(flag) == 1
+    ).count()
+
+    filas_flags_calidad.append(
+        (
+            flag,
+            n_flag,
+            round(100 * n_flag / n_registros, 4)
+        )
+    )
+
+if len(filas_flags_calidad) > 0:
+
+    tabla_flags_calidad = spark.createDataFrame(
+        filas_flags_calidad,
+        [
+            "flag",
+            "n_registros",
+            "porcentaje_registros"
+        ]
+    )
+
+    fig_flags_calidad = px.bar(
+        spark_a_pandas(tabla_flags_calidad),
+        x="flag",
+        y="porcentaje_registros",
+        title="Resumen de flags de calidad del preprocesado",
+        labels={
+            "flag": "Flag de calidad",
+            "porcentaje_registros": "Registros afectados (%)"
+        },
+        hover_data=["n_registros"]
+    )
+
+    fig_flags_calidad.update_layout(
+        xaxis_tickangle=-45
+    )
+
+    guardar_grafico_plotly(
+        fig_flags_calidad,
+        "flags_calidad_preprocesado.html"
+    )
+
+else:
+    print("No se encontraron flags de calidad en el dataset.")
+
+# Resumen y cierre
+
+print("\n" + "=" * 70)
+print("Resumen y cierre")
+print("=" * 70)
+
+print("\nEl script de gráficos ha generado figuras sobre:")
+
+print("- Distribución de registros y pacientes por hospital.")
+print("- Pacientes con y sin sepsis.")
+print("- Porcentaje de sepsis por hospital.")
+print("- Sexo, edad y duración del seguimiento en UCI.")
+print("- Valores perdidos por hospital en variables clínicas principales.")
+print("- Lactato y delta de lactato en primeras 24 horas.")
+print("- MAP, delta de MAP e incoherencias de presión arterial.")
+print("- FiO2, O2Sat, SaO2 y O2Sat_combined.")
+print("- Constantes vitales de respuesta sistémica.")
+print("- Variables ácido-base y metabólicas.")
+print("- Variables de disfunción orgánica e inflamación.")
+print("- Calcium y flags de calidad del preprocesado.")
+
+print("\nLos gráficos se han guardado en formato HTML en:")
+print(ruta_graficos_local)
+
+print("\nNo se han modificado los datos originales ni el Parquet preprocesado.")
+print("Este script solo genera visualizaciones exploratorias.")
+
+spark.stop()
+
+print("\nSesión Spark cerrada correctamente.")
