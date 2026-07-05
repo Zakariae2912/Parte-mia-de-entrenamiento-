@@ -99,3 +99,38 @@ dataset.select(
  .count() \
  .orderBy("hospital") \
  .show()
+
+
+#CREACIÓN DE DATASET A NIVEL PACIENTE
+
+print("\n" + "=" * 70)
+print("4. CREACIÓN DE DATASET A NIVEL PACIENTE")
+print("=" * 70)
+
+# Se han juntado todas las horas de cada paciente en una sola fila 
+
+dataset_paciente = dataset.groupBy(
+    "hospital",
+    "patient_id"
+).agg(
+    F.max("Age").alias("Age"),
+    F.max("Gender").alias("Gender"),
+    F.max("Unit1").alias("Unit1"),
+    F.max("Unit2").alias("Unit2"),
+    F.min("ICULOS").alias("ICULOS_min"),
+    F.max("ICULOS").alias("ICULOS_max"),
+    F.count("ICULOS").alias("n_registros_paciente"),
+    F.max("SepsisLabel").alias("paciente_con_sepsis"),
+    F.min(
+        F.when(
+            F.col("SepsisLabel") == 1,
+            F.col("ICULOS")
+        )
+    ).alias("primera_hora_sepsis")
+)
+
+print("\nPrimeras filas del dataset a nivel paciente:")
+dataset_paciente.show(10, truncate=False)
+
+print("\nNúmero de pacientes en dataset_paciente:")
+print(dataset_paciente.count())
