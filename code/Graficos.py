@@ -156,9 +156,7 @@ guardar_grafico_plotly(
     "02_pacientes_por_hospital.html"
 )
 
-# ==========================================================
-# 6. SEPSIS GLOBAL Y POR HOSPITAL
-# ==========================================================
+# Sepsis golbal y por hospital
 
 print("\n" + "=" * 70)
 print("6. SEPSIS GLOBAL Y POR HOSPITAL")
@@ -416,3 +414,457 @@ if len(tablas_missing) > 0:
 else:
     print("No se encontraron variables clínicas para calcular missing.")
 
+
+# LACTATO
+
+
+print("\n" + "=" * 70)
+print("9. LACTATO")
+print("=" * 70)
+
+
+if "Lactate" in dataset.columns:
+
+    lactato_pandas = dataset.select(
+        "SepsisLabel",
+        "Lactate"
+    ).filter(
+        F.col("Lactate").isNotNull()
+    ).withColumn(
+        "grupo_sepsis",
+        F.when(
+            F.col("SepsisLabel") == 1,
+            F.lit("SepsisLabel = 1")
+        ).otherwise(
+            F.lit("SepsisLabel = 0")
+        )
+    ).toPandas()
+
+    fig_lactato = px.box(
+        lactato_pandas,
+        x="grupo_sepsis",
+        y="Lactate",
+        title="Lactato por SepsisLabel",
+        labels={
+            "grupo_sepsis": "Grupo",
+            "Lactate": "Lactato"
+        }
+    )
+
+    guardar_grafico_plotly(
+        fig_lactato,
+        "09_lactato_por_sepsislabel.html"
+    )
+
+else:
+    print("La variable Lactate no está disponible.")
+
+
+# Delta de lactato en primeras 24 horas
+
+
+if "delta_lactato_24h" in dataset.columns:
+
+    delta_lactato_pandas = dataset.select(
+        "hospital",
+        "patient_id",
+        "delta_lactato_24h"
+    ).dropDuplicates(
+        ["hospital", "patient_id"]
+    ).filter(
+        F.col("delta_lactato_24h").isNotNull()
+    ).toPandas()
+
+    fig_delta_lactato = px.histogram(
+        delta_lactato_pandas,
+        x="delta_lactato_24h",
+        nbins=40,
+        title="Distribución del delta de lactato durante las primeras 24 horas",
+        labels={
+            "delta_lactato_24h": "Delta lactato 24h"
+        }
+    )
+
+    guardar_grafico_plotly(
+        fig_delta_lactato,
+        "10_delta_lactato_24h.html"
+    )
+
+else:
+    print("La variable delta_lactato_24h no está disponible.")
+
+
+#Presion arterial y perfusion
+
+print("\n" + "=" * 70)
+print("Presion arteria y perfusion")
+print("=" * 70)
+
+
+if "MAP" in dataset.columns:
+
+    map_pandas = dataset.select(
+        "SepsisLabel",
+        "MAP"
+    ).filter(
+        F.col("MAP").isNotNull()
+    ).withColumn(
+        "grupo_sepsis",
+        F.when(
+            F.col("SepsisLabel") == 1,
+            F.lit("SepsisLabel = 1")
+        ).otherwise(
+            F.lit("SepsisLabel = 0")
+        )
+    ).toPandas()
+
+    fig_map = px.box(
+        map_pandas,
+        x="grupo_sepsis",
+        y="MAP",
+        title="Presión arterial media por SepsisLabel",
+        labels={
+            "grupo_sepsis": "Grupo",
+            "MAP": "MAP"
+        }
+    )
+
+    guardar_grafico_plotly(
+        fig_map,
+        "11_map_por_sepsislabel.html"
+    )
+
+else:
+    print("La variable MAP no está disponible.")
+
+
+# Delta de MAP en primeras 24 horas
+
+if "delta_map_24h" in dataset.columns:
+
+    delta_map_pandas = dataset.select(
+        "hospital",
+        "patient_id",
+        "delta_map_24h"
+    ).dropDuplicates(
+        ["hospital", "patient_id"]
+    ).filter(
+        F.col("delta_map_24h").isNotNull()
+    ).toPandas()
+
+    fig_delta_map = px.histogram(
+        delta_map_pandas,
+        x="delta_map_24h",
+        nbins=40,
+        title="Distribución del delta de MAP durante las primeras 24 horas",
+        labels={
+            "delta_map_24h": "Delta MAP 24h"
+        }
+    )
+
+    guardar_grafico_plotly(
+        fig_delta_map,
+        "12_delta_map_24h.html"
+    )
+
+else:
+    print("La variable delta_map_24h no está disponible.")
+
+
+# Incoherencias entre presiones arteriales
+
+
+flags_presion = [
+    "DBP_mayor_MAP",
+    "MAP_mayor_SBP",
+    "DBP_mayor_SBP"
+]
+
+flags_presion = [
+    flag for flag in flags_presion
+    if flag in dataset.columns
+]
+
+filas_flags_presion = []
+
+for flag in flags_presion:
+
+    n_flag = dataset.filter(
+        F.col(flag) == 1
+    ).count()
+
+    filas_flags_presion.append(
+        (
+            flag,
+            n_flag,
+            round(100 * n_flag / n_registros, 4)
+        )
+    )
+
+if len(filas_flags_presion) > 0:
+
+    tabla_flags_presion = spark.createDataFrame(
+        filas_flags_presion,
+        [
+            "flag",
+            "n_registros",
+            "porcentaje_registros"
+        ]
+    )
+
+    fig_flags_presion = px.bar(
+        spark_a_pandas(tabla_flags_presion),
+        x="flag",
+        y="porcentaje_registros",
+        title="Incoherencias entre presiones arteriales",
+        labels={
+            "flag": "Flag",
+            "porcentaje_registros": "Registros afectados (%)"
+        },
+        hover_data=["n_registros"]
+    )
+
+    guardar_grafico_plotly(
+        fig_flags_presion,
+        "13_incoherencias_presion_arterial.html"
+    )
+
+else:
+    print("No se encontraron flags de incoherencia entre presiones.")
+
+
+# oxigencion y soporte respiratorio
+
+print("\n" + "=" * 70)
+print("oxigenacion y soporte respiratorio")
+print("=" * 70)
+
+
+# FiO2 limpia por SepsisLabel
+
+
+if "FiO2_limpia" in dataset.columns:
+
+    fio2_pandas = dataset.select(
+        "SepsisLabel",
+        "FiO2_limpia"
+    ).filter(
+        F.col("FiO2_limpia").isNotNull()
+    ).withColumn(
+        "grupo_sepsis",
+        F.when(
+            F.col("SepsisLabel") == 1,
+            F.lit("SepsisLabel = 1")
+        ).otherwise(
+            F.lit("SepsisLabel = 0")
+        )
+    ).toPandas()
+
+    fig_fio2 = px.box(
+        fio2_pandas,
+        x="grupo_sepsis",
+        y="FiO2_limpia",
+        title="FiO2 limpia por SepsisLabel",
+        labels={
+            "grupo_sepsis": "Grupo",
+            "FiO2_limpia": "FiO2 limpia"
+        }
+    )
+
+    guardar_grafico_plotly(
+        fig_fio2,
+        "14_fio2_limpia_por_sepsislabel.html"
+    )
+
+else:
+    print("La variable FiO2_limpia no está disponible.")
+
+
+# Disponibilidad de O2Sat, SaO2 y O2Sat_combined
+
+variables_oxigenacion = [
+    "O2Sat",
+    "SaO2",
+    "O2Sat_combined"
+]
+
+variables_oxigenacion = [
+    variable for variable in variables_oxigenacion
+    if variable in dataset.columns
+]
+
+filas_oxigenacion = []
+
+for variable in variables_oxigenacion:
+
+    n_validos = dataset.filter(
+        F.col(variable).isNotNull()
+    ).count()
+
+    filas_oxigenacion.append(
+        (
+            variable,
+            n_validos,
+            round(100 * n_validos / n_registros, 2)
+        )
+    )
+
+if len(filas_oxigenacion) > 0:
+
+    tabla_oxigenacion = spark.createDataFrame(
+        filas_oxigenacion,
+        [
+            "variable",
+            "n_validos",
+            "porcentaje_validos"
+        ]
+    )
+
+    fig_oxigenacion = px.bar(
+        spark_a_pandas(tabla_oxigenacion),
+        x="variable",
+        y="porcentaje_validos",
+        title="Disponibilidad de variables de oxigenación",
+        labels={
+            "variable": "Variable",
+            "porcentaje_validos": "Valores válidos (%)"
+        },
+        hover_data=["n_validos"]
+    )
+
+    guardar_grafico_plotly(
+        fig_oxigenacion,
+        "15_disponibilidad_oxigenacion.html"
+    )
+
+else:
+    print("No se encontraron variables de oxigenación.")
+
+
+# O2Sat_combined por SepsisLabel
+
+
+if "O2Sat_combined" in dataset.columns:
+
+    o2sat_combined_pandas = dataset.select(
+        "SepsisLabel",
+        "O2Sat_combined"
+    ).filter(
+        F.col("O2Sat_combined").isNotNull()
+    ).withColumn(
+        "grupo_sepsis",
+        F.when(
+            F.col("SepsisLabel") == 1,
+            F.lit("SepsisLabel = 1")
+        ).otherwise(
+            F.lit("SepsisLabel = 0")
+        )
+    ).toPandas()
+
+    fig_o2sat_combined = px.box(
+        o2sat_combined_pandas,
+        x="grupo_sepsis",
+        y="O2Sat_combined",
+        title="O2Sat_combined por SepsisLabel",
+        labels={
+            "grupo_sepsis": "Grupo",
+            "O2Sat_combined": "O2Sat_combined"
+        }
+    )
+
+    guardar_grafico_plotly(
+        fig_o2sat_combined,
+        "16_o2sat_combined_por_sepsislabel.html"
+    )
+
+else:
+    print("La variable O2Sat_combined no está disponible.")
+
+
+# Diferencia O2Sat - SaO2 cuando ambas están disponibles
+
+
+if "O2Sat" in dataset.columns and "SaO2" in dataset.columns:
+
+    diferencia_oxigenacion = dataset.filter(
+        F.col("O2Sat").isNotNull()
+        & F.col("SaO2").isNotNull()
+    ).withColumn(
+        "diferencia_O2Sat_SaO2",
+        F.col("O2Sat") - F.col("SaO2")
+    ).select(
+        "diferencia_O2Sat_SaO2"
+    ).toPandas()
+
+    if len(diferencia_oxigenacion) > 0:
+
+        fig_diferencia_oxigenacion = px.histogram(
+            diferencia_oxigenacion,
+            x="diferencia_O2Sat_SaO2",
+            nbins=50,
+            title="Diferencia entre O2Sat y SaO2 cuando ambas están disponibles",
+            labels={
+                "diferencia_O2Sat_SaO2": "O2Sat - SaO2"
+            }
+        )
+
+        guardar_grafico_plotly(
+            fig_diferencia_oxigenacion,
+            "17_diferencia_o2sat_sao2.html"
+        )
+
+    else:
+        print("No hay registros con O2Sat y SaO2 disponibles simultáneamente.")
+
+
+# CONSTANTES VITALES DE RESPUESTA SISTÉMICA
+print("\n" + "=" * 70)
+print("Constantes vitales de respuesta sistemica")
+print("=" * 70)
+
+
+
+
+variables_vitales = [
+    "HR_limpia",
+    "Temp_limpia",
+    "Resp_limpia"
+]
+
+variables_vitales = [
+    variable for variable in variables_vitales
+    if variable in dataset.columns
+]
+
+for variable in variables_vitales:
+
+    vital_pandas = dataset.select(
+        "SepsisLabel",
+        variable
+    ).filter(
+        F.col(variable).isNotNull()
+    ).withColumn(
+        "grupo_sepsis",
+        F.when(
+            F.col("SepsisLabel") == 1,
+            F.lit("SepsisLabel = 1")
+        ).otherwise(
+            F.lit("SepsisLabel = 0")
+        )
+    ).toPandas()
+
+    fig_vital = px.box(
+        vital_pandas,
+        x="grupo_sepsis",
+        y=variable,
+        title=variable + " por SepsisLabel",
+        labels={
+            "grupo_sepsis": "Grupo",
+            variable: variable
+        }
+    )
+
+    guardar_grafico_plotly(
+        fig_vital,
+        variable + "_por_sepsislabel.html"
+    )
