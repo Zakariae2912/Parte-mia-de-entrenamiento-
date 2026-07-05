@@ -327,3 +327,92 @@ guardar_grafico_plotly(
     fig_iculos,
     "07_distribucion_iculos_max.html"
 )
+
+# Missing por hospital
+
+print("\n" + "=" * 70)
+print("Missing por hospital")
+print("=" * 70)
+
+variables_missing_clinicas = [
+    "Lactate",
+    "MAP",
+    "FiO2",
+    "O2Sat",
+    "SaO2",
+    "O2Sat_combined",
+    "Resp",
+    "Temp",
+    "HR",
+    "Creatinine",
+    "WBC",
+    "Platelets",
+    "Hgb",
+    "Calcium"
+]
+
+variables_missing_clinicas = [
+    variable for variable in variables_missing_clinicas
+    if variable in dataset.columns
+]
+
+tablas_missing = []
+
+for variable in variables_missing_clinicas:
+
+    tabla_variable = dataset.groupBy(
+        "hospital"
+    ).agg(
+        F.count("*").alias("n_registros"),
+        F.sum(
+            F.when(
+                F.col(variable).isNull(),
+                1
+            ).otherwise(0)
+        ).alias("n_nulos")
+    ).withColumn(
+        "variable",
+        F.lit(variable)
+    ).withColumn(
+        "porcentaje_nulos",
+        F.round(
+            100 * F.col("n_nulos") / F.col("n_registros"),
+            2
+        )
+    ).select(
+        "variable",
+        "hospital",
+        "porcentaje_nulos"
+    )
+
+    tablas_missing.append(tabla_variable)
+
+
+if len(tablas_missing) > 0:
+
+    tabla_missing_hospital = tablas_missing[0]
+
+    for tabla in tablas_missing[1:]:
+        tabla_missing_hospital = tabla_missing_hospital.unionByName(tabla)
+
+    fig_missing_hospital = px.bar(
+        spark_a_pandas(tabla_missing_hospital),
+        x="variable",
+        y="porcentaje_nulos",
+        color="hospital",
+        barmode="group",
+        title="Valores perdidos por hospital en variables clínicas principales",
+        labels={
+            "variable": "Variable",
+            "porcentaje_nulos": "Valores perdidos (%)",
+            "hospital": "Hospital"
+        }
+    )
+
+    guardar_grafico_plotly(
+        fig_missing_hospital,
+        "08_missing_por_hospital_variables_clinicas.html"
+    )
+
+else:
+    print("No se encontraron variables clínicas para calcular missing.")
