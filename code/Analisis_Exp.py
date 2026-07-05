@@ -27,7 +27,7 @@ print("\nDataset cargado correctamente desde Parquet.")
 #Cuantos filas, columnas, pacientes y variables.
 
 print("\n" + "=" * 70)
-print("1. DIMENSIONES GENERALES DEL DATASET")
+print("Ver dimensiones del Dataset")
 print("=" * 70)
 
 n_registros = dataset.count()
@@ -48,10 +48,10 @@ print("\nVariables disponibles en el dataset:")
 for variable in dataset.columns:
     print(variable)
 
-#Exploracion de variables clave y ver si falta alguna en el parquet
+#Exploracion de variables clave
 
 print("\n" + "=" * 70)
-print("2. Exploracion de variables clave")
+print("Exploracion de variables clave")
 print("=" * 70)
 
 columnas_clave = [
@@ -79,7 +79,7 @@ else:
 # Distribucion por hospital
 
 print("\n" + "=" * 70)
-print("3. Distribución por hospital")
+print("Distribución por hospital")
 print("=" * 70)
 
 print("\nRegistros horarios por hospital:")
@@ -104,7 +104,7 @@ dataset.select(
 #CREACIÓN DE DATASET A NIVEL PACIENTE
 
 print("\n" + "=" * 70)
-print("4. CREACIÓN DE DATASET A NIVEL PACIENTE")
+print("CREACIÓN DE DATASET A NIVEL PACIENTE")
 print("=" * 70)
 
 # Se han juntado todas las horas de cada paciente en una sola fila 
@@ -138,7 +138,7 @@ print(dataset_paciente.count())
 # Descripcion global de la cohorte
 
 print("\n" + "=" * 70)
-print("5. Descripcion global de la cohorte")
+print("Descripcion global de la cohorte")
 print("=" * 70)
 
 print("\nEdad y duración del seguimiento en UCI:")
@@ -179,7 +179,7 @@ dataset_paciente.groupBy("Unit2") \
 #Sépticos y no sépticos: 
 
 print("\n" + "=" * 70)
-print("6. Sépticos y no sépticos: ")
+print("Sépticos y no sépticos: ")
 print("=" * 70)
 
 print("\nDistribución global de pacientes con y sin sepsis:")
@@ -210,10 +210,10 @@ dataset_paciente.filter(
     F.max("primera_hora_sepsis").alias("max_horas")
 ).show(truncate=False)
 
-# 7. Compracion intercentro
+# 7. Comparacion intercentro
 
 print("\n" + "=" * 70)
-print("7. Comparacion intercentro")
+print("Comparacion intercentro")
 print("=" * 70)
 
 resumen_hospital = dataset_paciente.groupBy("hospital").agg(
