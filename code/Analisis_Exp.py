@@ -552,3 +552,53 @@ if "O2Sat" in dataset.columns and "SaO2" in dataset.columns:
             F.min(F.col("O2Sat") - F.col("SaO2")).alias("diferencia_min"),
             F.max(F.col("O2Sat") - F.col("SaO2")).alias("diferencia_max")
         ).show(truncate=False)
+
+
+# Revision la variable calcium
+
+print("\n" + "=" * 70)
+print("Revision de la variable calcium")
+print("=" * 70)
+
+if "Calcium" in dataset.columns:
+
+    n_calcium = dataset.filter(
+        F.col("Calcium").isNotNull()
+    ).count()
+
+    print("\nNúmero de registros con Calcium disponible:")
+    print(n_calcium)
+
+    print("\nEstadísticos descriptivos de Calcium:")
+
+    dataset.select(
+        "Calcium"
+    ).describe().show(
+        truncate=False
+    )
+
+    print("\nCalcium por hospital:")
+
+    dataset.groupBy("hospital").agg(
+        F.count("Calcium").alias("n_validos"),
+        F.mean("Calcium").alias("media"),
+        F.stddev("Calcium").alias("desv_std"),
+        F.min("Calcium").alias("minimo"),
+        F.max("Calcium").alias("maximo")
+    ).orderBy("hospital") \
+     .show(truncate=False)
+
+    if n_calcium > 0:
+
+        cuantiles_calcium = dataset.approxQuantile(
+            "Calcium",
+            [0.01, 0.05, 0.25, 0.50, 0.75, 0.95, 0.99],
+            0.01
+        )
+
+        print("\nCuantiles aproximados de Calcium:")
+        print("p01, p05, p25, p50, p75, p95, p99")
+        print(cuantiles_calcium)
+
+else:
+    print("La variable Calcium no está presente en el dataset.")
