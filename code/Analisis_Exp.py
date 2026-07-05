@@ -487,3 +487,68 @@ if len(filas_flags) > 0:
 
 else:
     print("No se encontraron columnas de flags de calidad.")
+
+
+# Revision de 02Sat, SaO2 y O2Sat_Combined
+
+print("\n" + "=" * 70)
+print("Revision de 02Sat, SaO2 y O2Sat_Combined")
+print("=" * 70)
+
+columnas_oxigenacion = [
+    "O2Sat",
+    "SaO2",
+    "O2Sat_combined"
+]
+
+columnas_oxigenacion = [
+    columna for columna in columnas_oxigenacion
+    if columna in dataset.columns
+]
+
+if len(columnas_oxigenacion) > 0:
+
+    print("\nNúmero de valores válidos en variables de oxigenación:")
+
+    dataset.select(
+        [
+            F.count(F.col(columna)).alias(columna + "_n_validos")
+            for columna in columnas_oxigenacion
+        ]
+    ).show(truncate=False)
+
+    print("\nEstadísticos descriptivos de variables de oxigenación:")
+
+    dataset.select(
+        columnas_oxigenacion
+    ).describe().show(
+        truncate=False
+    )
+
+else:
+    print("No se encontraron variables de oxigenación en el dataset.")
+
+
+if "O2Sat" in dataset.columns and "SaO2" in dataset.columns:
+
+    registros_ambas = dataset.filter(
+        F.col("O2Sat").isNotNull()
+        & F.col("SaO2").isNotNull()
+    ).count()
+
+    print("\nRegistros con O2Sat y SaO2 disponibles simultáneamente:")
+    print(registros_ambas)
+
+    if registros_ambas > 0:
+
+        print("\nDiferencia entre O2Sat y SaO2 cuando ambas están disponibles:")
+
+        dataset.filter(
+            F.col("O2Sat").isNotNull()
+            & F.col("SaO2").isNotNull()
+        ).select(
+            F.mean(F.col("O2Sat") - F.col("SaO2")).alias("diferencia_media"),
+            F.stddev(F.col("O2Sat") - F.col("SaO2")).alias("diferencia_desv_std"),
+            F.min(F.col("O2Sat") - F.col("SaO2")).alias("diferencia_min"),
+            F.max(F.col("O2Sat") - F.col("SaO2")).alias("diferencia_max")
+        ).show(truncate=False)
