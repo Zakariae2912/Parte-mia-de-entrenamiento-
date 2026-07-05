@@ -134,3 +134,101 @@ dataset_paciente.show(10, truncate=False)
 
 print("\nNúmero de pacientes en dataset_paciente:")
 print(dataset_paciente.count())
+
+# Descripcion global de la cohorte
+
+print("\n" + "=" * 70)
+print("5. Descripcion global de la cohorte")
+print("=" * 70)
+
+print("\nEdad y duración del seguimiento en UCI:")
+
+dataset_paciente.agg(
+    F.count("*").alias("n_pacientes"),
+    F.mean("Age").alias("edad_media"),
+    F.stddev("Age").alias("edad_desv_std"),
+    F.min("Age").alias("edad_min"),
+    F.max("Age").alias("edad_max"),
+    F.mean("ICULOS_max").alias("iculos_max_media"),
+    F.stddev("ICULOS_max").alias("iculos_max_desv_std"),
+    F.min("ICULOS_max").alias("iculos_max_min"),
+    F.max("ICULOS_max").alias("iculos_max_max")
+).show(truncate=False)
+
+print("\nDistribución por sexo:")
+
+dataset_paciente.groupBy("Gender") \
+    .count() \
+    .orderBy("Gender") \
+    .show()
+
+print("\nDistribución por Unit1:")
+
+dataset_paciente.groupBy("Unit1") \
+    .count() \
+    .orderBy("Unit1") \
+    .show()
+
+print("\nDistribución por Unit2:")
+
+dataset_paciente.groupBy("Unit2") \
+    .count() \
+    .orderBy("Unit2") \
+    .show()
+
+#Sépticos y no sépticos: 
+
+print("\n" + "=" * 70)
+print("6. Sépticos y no sépticos: ")
+print("=" * 70)
+
+print("\nDistribución global de pacientes con y sin sepsis:")
+
+dataset_paciente.groupBy("paciente_con_sepsis") \
+    .count() \
+    .orderBy("paciente_con_sepsis") \
+    .show()
+
+print("\nDistribución de pacientes con y sin sepsis por hospital:")
+
+dataset_paciente.groupBy(
+    "hospital",
+    "paciente_con_sepsis"
+).count() \
+ .orderBy("hospital", "paciente_con_sepsis") \
+ .show()
+
+print("\nResumen de la primera hora de aparición de SepsisLabel = 1:")
+
+dataset_paciente.filter(
+    F.col("paciente_con_sepsis") == 1
+).agg(
+    F.count("*").alias("n_pacientes_sepsis"),
+    F.mean("primera_hora_sepsis").alias("media_horas"),
+    F.stddev("primera_hora_sepsis").alias("desv_std"),
+    F.min("primera_hora_sepsis").alias("min_horas"),
+    F.max("primera_hora_sepsis").alias("max_horas")
+).show(truncate=False)
+
+# 7. Compracion intercentro
+
+print("\n" + "=" * 70)
+print("7. Comparacion intercentro")
+print("=" * 70)
+
+resumen_hospital = dataset_paciente.groupBy("hospital").agg(
+    F.count("*").alias("n_pacientes"),
+    F.sum("paciente_con_sepsis").alias("n_pacientes_sepsis"),
+    F.mean("Age").alias("edad_media"),
+    F.stddev("Age").alias("edad_desv_std"),
+    F.mean("ICULOS_max").alias("iculos_max_media"),
+    F.stddev("ICULOS_max").alias("iculos_max_desv_std")
+).withColumn(
+    "porcentaje_sepsis",
+    F.round(
+        100 * F.col("n_pacientes_sepsis") / F.col("n_pacientes"),
+        2
+    )
+)
+
+resumen_hospital.show(truncate=False)
