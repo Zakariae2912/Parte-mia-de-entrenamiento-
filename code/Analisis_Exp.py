@@ -747,6 +747,94 @@ if len(variables_tendencias_24h) > 0:
 else:
     print("No se encontraron variables de tendencias de primeras 24 horas.")
 
+
+# Exportacion de tablas de analisis
+
+print("\n" + "=" * 70)
+print("Exportacion de Tablas")
+print("=" * 70)
+
+# Las tablas principales del análisis exploratorio se guardan en formato CSV.
+# Spark genera una carpeta por cada tabla, con uno o varios archivos internos.
+# Se utiliza coalesce(1) para facilitar la revisión manual de cada salida.
+
+ruta_resultados_eda_local = "/home/adminp/TFA/resultados_eda"
+ruta_resultados_eda_spark = "file://" + ruta_resultados_eda_local
+
+
+def exportar_tabla_csv(tabla, nombre_tabla):
+    tabla.coalesce(1) \
+        .write \
+        .mode("overwrite") \
+        .option("header", True) \
+        .csv(ruta_resultados_eda_spark + "/" + nombre_tabla)
+
+    print("Tabla exportada:", nombre_tabla)
+
+
+exportar_tabla_csv(
+    resumen_global_cohorte,
+    "01_resumen_global_cohorte"
+)
+
+exportar_tabla_csv(
+    tabla_genero,
+    "02_distribucion_genero"
+)
+
+exportar_tabla_csv(
+    tabla_unit1,
+    "03_distribucion_unit1"
+)
+
+exportar_tabla_csv(
+    tabla_unit2,
+    "04_distribucion_unit2"
+)
+
+exportar_tabla_csv(
+    tabla_sepsis_global,
+    "05_sepsis_global"
+)
+
+exportar_tabla_csv(
+    tabla_sepsis_hospital,
+    "06_sepsis_por_hospital"
+)
+
+exportar_tabla_csv(
+    resumen_primera_sepsis,
+    "07_resumen_primera_hora_sepsis"
+)
+
+exportar_tabla_csv(
+    resumen_hospital,
+    "08_resumen_intercentro"
+)
+
+exportar_tabla_csv(
+    comparacion_sepsis,
+    "09_comparacion_sepsis_no_sepsis"
+)
+
+exportar_tabla_csv(
+    tabla_missing,
+    "10_valores_perdidos_globales"
+)
+
+exportar_tabla_csv(
+    tabla_depuradas,
+    "11_variables_depuradas"
+)
+
+exportar_tabla_csv(
+    tabla_flags,
+    "12_flags_calidad"
+)
+
+print("\nTablas del análisis exploratorio exportadas en:")
+print(ruta_resultados_eda_local)
+
 # Resumen final
 
 print("\n" + "=" * 70)
