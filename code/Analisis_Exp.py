@@ -9,7 +9,7 @@ spark = SparkSession.builder \
 spark.sparkContext.setLogLevel("ERROR")
 
 # NO leer el dataset original.
-ruta_parquet_local = "/home/adminp/TFA/parquet/dataset_preprocesado"
+ruta_parquet_local = "PON TU RUTA PORFA"
 ruta_parquet_spark = "file://" + ruta_parquet_local
 
 
