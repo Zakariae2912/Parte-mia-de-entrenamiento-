@@ -641,3 +641,75 @@ for variable in variables_clinicas_principales:
         F.max(variable).alias("maximo")
     ).orderBy("SepsisLabel") \
      .show(truncate=False)
+
+# Tendencia las primeras 24 horas
+
+print("\n" + "=" * 70)
+print("Tendencia la primeras 24 horas")
+print("=" * 70)
+
+#Echale un vistazo a esto en PORFA
+variables_tendencias_24h = [
+    "lactato_min_24h",
+    "lactato_max_24h",
+    "fio2_min_24h",
+    "fio2_max_24h",
+    "o2sat_min_24h",
+    "o2sat_max_24h",
+    "map_min_24h",
+    "map_max_24h",
+    "delta_lactato_24h",
+    "delta_fio2_24h",
+    "delta_o2sat_24h",
+    "delta_map_24h"
+]
+
+variables_tendencias_24h = [
+    variable for variable in variables_tendencias_24h
+    if variable in dataset.columns
+]
+
+if len(variables_tendencias_24h) > 0:
+
+    dataset.select(
+        variables_tendencias_24h
+    ).describe().show(
+        truncate=False
+    )
+
+else:
+    print("No se encontraron variables de tendencias de primeras 24 horas.")
+
+# Resumen final
+
+print("\n" + "=" * 70)
+print("Resumen final")
+print("=" * 70)
+
+print("\nEste script ha realizado:")
+print("- Validación del Parquet preprocesado.")
+print("- Recuento de registros, pacientes y variables.")
+print("- Comprobación de variables clave.")
+print("- Distribución de registros y pacientes por hospital.")
+print("- Construcción de un dataset a nivel paciente.")
+print("- Descripción global de la cohorte.")
+print("- Análisis de pacientes con y sin sepsis.")
+print("- Comparación intercentro a nivel paciente.")
+print("- Comparación entre pacientes con y sin sepsis.")
+print("- Revisión de valores perdidos globales y por hospital.")
+print("- Revisión de variables depuradas y flags de calidad.")
+print("- Revisión de O2Sat, SaO2 y O2Sat_combined.")
+print("- Revisión específica de Calcium.")
+print("- Comparación de variables clínicas principales por SepsisLabel.")
+print("- Revisión descriptiva de variables temporales.")
+print("- Revisión de tendencias durante las primeras 24 horas.")
+
+print("\nNo se han aplicado nuevas limpiezas ni transformaciones definitivas.")
+print("El objetivo ha sido explorar, validar y resumir el dataset preprocesado.")
+
+
+# ==========================================================
+# CIERRE DE SPARK
+# ==========================================================
+
+spark.stop()
