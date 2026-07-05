@@ -429,3 +429,61 @@ else:
 #Ya se generaron variables limpias y flagos en el preprocesado fuera de rango pero bueno bueno esto ultimo lo dejamos
 #Como medida de seguridad extra
 
+# Resumen de Flags existentes
+
+print("\n" + "=" * 70)
+print("Resumen de Flags existentes")
+print("=" * 70)
+
+flags_calidad = [
+    columna for columna in dataset.columns
+    if columna.endswith("_fuera_rango")
+]
+
+# Añadimos indicadores de incoherencia entre presiones.
+flags_presion = [
+    "DBP_mayor_MAP",
+    "MAP_mayor_SBP",
+    "DBP_mayor_SBP"
+]
+
+flags_calidad = flags_calidad + [
+    flag for flag in flags_presion
+    if flag in dataset.columns
+]
+
+filas_flags = []
+
+for flag in flags_calidad:
+
+    n_flag = dataset.filter(
+        F.col(flag) == 1
+    ).count()
+
+    filas_flags.append(
+        (
+            flag,
+            n_flag,
+            round(100 * n_flag / n_registros, 4)
+        )
+    )
+
+if len(filas_flags) > 0:
+
+    tabla_flags = spark.createDataFrame(
+        filas_flags,
+        [
+            "flag",
+            "n_registros",
+            "porcentaje_registros"
+        ]
+    )
+
+    tabla_flags.orderBy(
+        F.desc("porcentaje_registros")
+    ).show(
+        truncate=False
+    )
+
+else:
+    print("No se encontraron columnas de flags de calidad.")
