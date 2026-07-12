@@ -1,6 +1,7 @@
 # ============================================================
-# 05_analisis_sepsis.py
-# MODELO PREDICTIVO DE SEPSIS A NIVEL PACIENTE
+# 07_interpretacion_regresion_logistica.py
+# ODDS RATIOS Y COEFICIENTES DE LA REGRESIÓN LOGÍSTICA
+# VALIDACIÓN INTERCENTRO LOSO
 # ============================================================
 
 from pyspark.sql import SparkSession
@@ -17,7 +18,7 @@ from pyspark.ml.functions import vector_to_array
 # ------------------------------------------------------------
 
 spark = SparkSession.builder \
-    .appName("Modelo_Sepsis_LOSO") \
+    ..appName("Interpretacion_Regresion_Logistica_LOSO") \
     .config("spark.driver.memory", "4g") \
     .getOrCreate()
 
