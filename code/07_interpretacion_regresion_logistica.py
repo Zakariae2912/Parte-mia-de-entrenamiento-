@@ -7,6 +7,8 @@
 from pyspark.sql import SparkSession
 from pyspark.sql import functions as F
 
+import math
+
 from pyspark.ml.feature import VectorAssembler, StandardScaler, Imputer
 from pyspark.ml.classification import LogisticRegression
 from pyspark.ml.evaluation import BinaryClassificationEvaluator
